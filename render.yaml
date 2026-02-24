@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: telegram-monitor-bot
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn src.bot:app --bind 0.0.0.0:$PORT --worker-class sync --timeout 120 & python src/bot.py
