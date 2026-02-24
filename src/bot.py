@@ -928,26 +928,59 @@ async def main():
         logger.error("Please set BOT_TOKEN environment variable")
         return
     
-    bot_instance = UsernameMonitorBot(BOT_TOKEN)
-    await bot_instance.initialize()
-    
-    # Keep running
-    while True:
-        await asyncio.sleep(60)
+    try:
+        # Initialize bot
+        bot_instance = UsernameMonitorBot(BOT_TOKEN)
+        
+        # Initialize application properly
+        bot_instance.app = Application.builder().token(BOT_TOKEN).build()
+        bot_instance._register_handlers()
+        
+        # Start monitoring task
+        bot_instance.monitoring_task = asyncio.create_task(bot_instance._monitoring_loop())
+        
+        # Start polling
+        await bot_instance.app.initialize()
+        await bot_instance.app.start()
+        
+        # Start polling without Updater
+        await bot_instance.app.updater.start_polling()
+        
+        logger.info("Bot started successfully!")
+        
+        # Keep running
+        while True:
+            await asyncio.sleep(60)
+            
+    except Exception as e:
+        logger.error(f"Error in main: {e}")
+        logger.error(traceback.format_exc())
 
 def run_bot():
     """Run bot in asyncio event loop"""
     try:
         asyncio.run(main())
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(main())
+    except RuntimeError as e:
+        logger.error(f"Runtime error: {e}")
+        # If event loop is already running
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(main())
+        except Exception as e:
+            logger.error(f"Failed to start bot: {e}")
+            time.sleep(5)  # Wait and retry
 
 if __name__ == "__main__":
     # Start Flask in a separate thread
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
     
-    # Run bot
-    run_bot()
+    # Run bot with retry
+    while True:
+        try:
+            run_bot()
+        except Exception as e:
+            logger.error(f"Bot crashed: {e}")
+            logger.error(traceback.format_exc())
+            time.sleep(10)  # Wait 10 seconds before restarting
