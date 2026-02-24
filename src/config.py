@@ -21,3 +21,7 @@ DEFAULT_USER_LIMIT = 20
 
 # API settings
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+
+# Logging settings - YEH ADD KARO
+LOG_LEVEL = "INFO"
+LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
